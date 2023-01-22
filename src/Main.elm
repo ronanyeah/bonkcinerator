@@ -34,7 +34,7 @@ init flags =
       , messages = []
       , burnSig = Nothing
       , screen = flags.screen
-      , isSmall = flags.screen.width < 1200
+      , isSmall = flags.screen.width < 1200 || flags.screen.height < 830
       }
     , Cmd.none
     )

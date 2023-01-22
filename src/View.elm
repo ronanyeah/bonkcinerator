@@ -48,7 +48,12 @@ view model =
                  , padding 40
                  , width fill
                  ]
-                    ++ (if model.screen.width < 300 then
+                    ++ (if model.screen.height < 400 then
+                            [ scale 0.4
+                            , moveUp 240
+                            ]
+
+                        else if model.screen.width < 300 || model.screen.height < 500 then
                             [ scale 0.4
                             , moveUp 200
                             ]
@@ -257,15 +262,27 @@ viewDash model =
                     , model.burnSig
                         |> whenJust
                             (\sig ->
-                                [ para "Transaction submitted:"
-                                , newTabLink [ hover, Font.underline ]
-                                    { url = "https://solscan.io/tx/" ++ sig
-                                    , label = text <| String.left 25 sig ++ "..."
-                                    }
+                                [ [ text "Transaction submitted:"
+                                        |> el [ Font.bold ]
+                                  , newTabLink [ hover, Font.underline ]
+                                        { url = "https://solscan.io/tx/" ++ sig
+                                        , label = text <| String.left 25 sig ++ "..."
+                                        }
+                                  ]
+                                    |> column
+                                        [ spacing 10
+                                        , Background.color white
+                                        , padding 15
+                                        , Border.width 1
+                                        ]
                                 , btn "Continue" ClearAction
                                     |> el [ centerX ]
                                 ]
-                                    |> column [ spacing 20, fadeIn, centerX ]
+                                    |> column
+                                        [ spacing 20
+                                        , fadeIn
+                                        , centerX
+                                        ]
                             )
                     ]
                         |> column [ spacing 20, paddingXY 0 30, width <| px 430, centerX ]
@@ -344,6 +361,27 @@ viewDash model =
             , Border.width 6
             , cappedHeight 600
             , width fill
+            , Input.button
+                [ hover
+                , alignRight
+                , paddingXY 30 20
+                ]
+                { onPress =
+                    if model.nfts == Nothing then
+                        Nothing
+
+                    else
+                        Just RefreshTokens
+                , label =
+                    image
+                        [ width <| px 40
+                        , spin
+                            |> whenAttr (model.nfts == Nothing)
+                        ]
+                        { src = "/refresh.svg", description = "" }
+                }
+                |> inFront
+                |> whenAttr (model.view == ViewNav NavBurnNft)
             ]
         |> el [ height fill, width fill ]
 
@@ -353,23 +391,37 @@ viewNav model nav conn wallet =
             { src = wallet.icon
             , description = ""
             }
-        , String.left 8 conn.address
+        , String.left 4 conn.address
             ++ "..."
-            ++ String.right 8 conn.address
+            ++ String.right 4 conn.address
             |> text
             |> el
                 [ Html.Attributes.title conn.address
                     |> htmlAttribute
+                , Font.size 17
                 ]
-        , btn "Disconnect" Disconnect
         ]
             |> row [ spacing 10 ]
-      , newTabLink [ hover, Font.underline, Font.size 15 ]
+      , [ newTabLink [ hover, Font.underline, Font.size 15 ]
             { url = "https://solscan.io/account/" ++ conn.address
             , label = text "View your transactions"
             }
+        , Input.button [ Background.color <| rgb255 230 0 0, Border.rounded 15, paddingXY 10 5, Font.size 14, hover, Font.color white ]
+            { onPress = Just Disconnect
+            , label = text "Disconnect"
+            }
+        ]
+            |> row [ width fill, spaceEvenly ]
       ]
-        |> column [ width fill, Background.color white, Border.rounded 15, padding 10 ]
+        |> column
+            [ width <| px 350
+            , Background.color white
+            , padding 10
+            , centerX
+            , Border.shadow
+                { blur = 10, color = black, offset = ( 2, 2 ), size = 2 }
+            , fadeIn
+            ]
     , [ btn "Burn tokens" (SelectView <| ViewNav NavBurnNft)
       , btn "Cleanup" (SelectView <| ViewNav NavCleanup)
       , btn "History" (SelectView <| ViewNav NavHistory)
@@ -378,10 +430,7 @@ viewNav model nav conn wallet =
         |> when False
     , case nav of
         NavBurnNft ->
-            [ text "NFTs"
-                |> el [ Font.bold ]
-                |> when False
-            , model.nfts
+            model.nfts
                 |> unwrap
                     ([ text "Fetching tokens...", spinner 30 ]
                         |> row
@@ -402,71 +451,20 @@ viewNav model nav conn wallet =
                                 |> column [ spacing 20, centerX ]
 
                         else
-                            nfts
+                            [ text "Select a token you want to convert to BONK"
+                                |> el [ Font.bold, centerX ]
+                            , nfts
                                 |> List.sortBy
                                     (\n ->
                                         --n.amount
                                         n.mintId
                                     )
                                 |> List.reverse
-                                |> List.map
-                                    (\nft ->
-                                        let
-                                            details =
-                                                model.details
-                                                    |> Dict.get nft.mintId
-                                        in
-                                        [ details
-                                            |> unwrap
-                                                (Input.button [ hover ]
-                                                    { onPress = Just <| FetchDetails nft.mintId
-                                                    , label =
-                                                        image [ width <| px 65 ]
-                                                            { src = "/what.png"
-                                                            , description = ""
-                                                            }
-                                                    }
-                                                )
-                                                (\data ->
-                                                    image [ width <| px 65 ]
-                                                        { src = data.img
-                                                        , description = ""
-                                                        }
-                                                )
-                                            |> el [ alignTop ]
-                                        , [ details
-                                                |> whenJust (.name >> text)
-                                          , [ newTabLink [ hover, Font.underline ]
-                                                { url = "https://solscan.io/token/" ++ nft.mintId
-                                                , label = text <| String.left 15 nft.mintId ++ "..."
-                                                }
-                                            , text <| formatAmount nft.decimals nft.amount
-                                            ]
-                                                |> row [ width fill, spaceEvenly ]
-                                          , [ btn "Burn" (Burn nft.mintId)
-
-                                            --, details
-                                            --|> whenJust
-                                            --(\deets ->
-                                            --"🔥 "
-                                            --++ String.fromInt deets.burnRating
-                                            --++ "/25"
-                                            --|> text
-                                            --)
-                                            ]
-                                                |> row
-                                                    [ width fill
-                                                    , spaceEvenly
-                                                    ]
-                                          ]
-                                            |> column [ spacing 10, width fill ]
-                                        ]
-                                            |> row [ spacing 10, cappedWidth 350, centerX ]
-                                    )
+                                |> List.map (viewToken model)
                                 |> column [ spacing 30, height fill, scrollbarY, width fill ]
+                            ]
+                                |> column [ spacing 30, height fill, width fill, fadeIn ]
                     )
-            ]
-                |> column [ spacing 30, height fill, width fill ]
 
         NavCleanup ->
             btnLoading model.cleanupInProgress "Cleanup" Cleanup
@@ -493,6 +491,115 @@ viewNav model nav conn wallet =
                 |> column [ width fill, spacing 20 ]
     ]
         |> column [ spacing 30, width fill, height fill ]
+
+
+viewToken model nft =
+    let
+        details =
+            model.details
+                |> Dict.get nft.mintId
+
+        inProg =
+            model.detailsInProgress == Just nft.mintId
+    in
+    [ details
+        |> unwrap
+            (Input.button [ hover ]
+                { onPress =
+                    if inProg then
+                        Nothing
+
+                    else
+                        Just <| FetchDetails nft.mintId
+                , label =
+                    image
+                        ([ width <| px 65 ]
+                            ++ (if inProg then
+                                    [ fade
+                                    , spinner 30
+                                        |> el [ centerX, centerY ]
+                                        |> inFront
+                                    ]
+
+                                else
+                                    []
+                               )
+                        )
+                        { src = "/what.png"
+                        , description = ""
+                        }
+                        |> el [ clip, Border.rounded 40, Border.width 2 ]
+                }
+            )
+            (\data ->
+                image [ width <| px 65 ]
+                    { src = data.img
+                    , description = ""
+                    }
+                    |> el [ clip, Border.rounded 40, Border.width 2, fadeIn ]
+            )
+        |> el [ alignTop ]
+    , [ [ [ details
+                |> unwrap "..." .name
+                |> para
+                |> myLabel "Name"
+          , formatAmount nft.decimals nft.amount
+                |> text
+                |> myLabel "Amount"
+          ]
+            |> column [ spacing 20, width fill ]
+        , el [ width <| px 20, height fill ] none
+        , [ newTabLink [ hover, Font.underline ]
+                { url = "https://solscan.io/token/" ++ nft.mintId
+                , label = text <| trimAddr nft.mintId
+                }
+                |> myLabel "Mint Address"
+          , newTabLink [ hover, Font.underline ]
+                { url = "https://solscan.io/token/" ++ nft.tokenAcct
+                , label = text <| trimAddr nft.tokenAcct
+                }
+                |> myLabel "Token Account"
+          ]
+            |> column [ spacing 20, alignTop, width <| px 140 ]
+        ]
+            |> row [ width fill, spaceEvenly ]
+      , [ btnLoading inProg "🔍 Fetch metadata" (FetchDetails nft.mintId)
+            |> when (details == Nothing)
+        , btn "🔥 Burn" (Burn nft.mintId)
+            |> el [ alignRight ]
+
+        --, details
+        --|> whenJust
+        --(\deets ->
+        --"🔥 "
+        --++ String.fromInt deets.burnRating
+        --++ "/25"
+        --|> text
+        --)
+        ]
+            |> row
+                [ width fill
+                , spaceEvenly
+                ]
+      ]
+        |> column [ spacing 20, width fill ]
+    ]
+        |> row
+            [ spacing 20
+            , width fill
+            , centerX
+            , Background.color white
+            , padding 20
+            , Border.width 1
+            ]
+
+
+myLabel tp btm =
+    [ text tp
+        |> el [ Font.bold ]
+    , btm
+    ]
+        |> column [ spacing 5, width fill ]
 
 
 spinner : Int -> Element msg
@@ -552,7 +659,9 @@ btn_ txt msg =
             hover
         , padding 10
         , Border.width 2
-        , Background.color white
+        , Background.color lightGold
+        , Border.shadow
+            { blur = 1, color = black, offset = ( 1, 1 ), size = 1 }
         ]
         { onPress = msg
         , label = text txt
@@ -608,6 +717,12 @@ twitterLink =
             ]
                 |> row [ spacing 5 ]
         }
+
+
+trimAddr addr =
+    String.left 4 addr
+        ++ "..."
+        ++ String.right 4 addr
 
 
 para txt =

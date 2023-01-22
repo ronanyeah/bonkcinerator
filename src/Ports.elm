@@ -1,4 +1,4 @@
-port module Ports exposing (burn, burnCb, cleanup, cleanupCb, connect, connectCb, fetchDetails, fetchDetailsCb, log, nftsCb, statusUpdate, walletUpdate)
+port module Ports exposing (burn, burnCb, cleanup, cleanupCb, connect, connectCb, fetchDetails, fetchDetailsCb, log, nftsCb, refreshTokens, statusUpdate, walletUpdate)
 
 import Types exposing (Details, Token, Wallet)
 
@@ -8,6 +8,9 @@ import Types exposing (Details, Token, Wallet)
 
 
 port log : String -> Cmd msg
+
+
+port refreshTokens : { walletName : String } -> Cmd msg
 
 
 port fetchDetails : { walletName : String, mintId : String } -> Cmd msg

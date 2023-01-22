@@ -37,6 +37,16 @@ update msg model =
             , Cmd.none
             )
 
+        RefreshTokens ->
+            ensureWallet
+                (\wallet ->
+                    ( { model
+                        | nfts = Nothing
+                      }
+                    , Ports.refreshTokens { walletName = wallet.name }
+                    )
+                )
+
         SelectView v ->
             ( { model
                 | view = v
@@ -49,6 +59,8 @@ update msg model =
                 | wallet = Nothing
                 , nfts = Nothing
                 , view = ViewConnect
+                , messages = []
+                , burnSig = Nothing
               }
             , Cmd.none
             )
@@ -135,38 +147,41 @@ update msg model =
             )
 
         BurnCb res ->
-            ( { model
-                | burnInProgress = Nothing
+            ensureWallet
+                (\_ ->
+                    ( { model
+                        | burnInProgress = Nothing
 
-                --, signatures = unwrap [] List.singleton res ++ model.signatures
-                , burnSig = res
-                , messages =
-                    if res == Nothing then
-                        model.messages ++ [ "There was a problem." ]
+                        --, signatures = unwrap [] List.singleton res ++ model.signatures
+                        , burnSig = res
+                        , messages =
+                            if res == Nothing then
+                                model.messages ++ [ "There was a problem." ]
 
-                    else
-                        model.messages
+                            else
+                                model.messages
 
-                --, view =
-                --if res == Nothing then
-                --model.view
-                --else
-                --ViewNav NavHistory
-                , nfts =
-                    if res == Nothing then
-                        model.nfts
+                        --, view =
+                        --if res == Nothing then
+                        --model.view
+                        --else
+                        --ViewNav NavHistory
+                        , nfts =
+                            if res == Nothing then
+                                model.nfts
 
-                    else
-                        model.nfts
-                            |> Maybe.map
-                                (List.filter
-                                    (\n ->
-                                        model.burnInProgress /= Just n.mintId
-                                    )
-                                )
-              }
-            , Cmd.none
-            )
+                            else
+                                model.nfts
+                                    |> Maybe.map
+                                        (List.filter
+                                            (\n ->
+                                                model.burnInProgress /= Just n.mintId
+                                            )
+                                        )
+                      }
+                    , Cmd.none
+                    )
+                )
 
         StatusCb val ->
             ( { model

@@ -63,6 +63,7 @@ const options: Record<string, WalletAdapter<string>> = {};
 
 interface TokenStuff {
   mintId: string;
+  tokenAcct: string;
   amount: string;
   decimals: number;
 }
@@ -122,6 +123,21 @@ app.ports.connect.subscribe((name: string) =>
     },
     (_e: any) => {
       app.ports.connectCb.send(null);
+    }
+  )
+);
+
+app.ports.refreshTokens.subscribe(({ walletName }: { walletName: string }) =>
+  wrap(
+    async () => {
+      const wallet = getWallet(walletName);
+
+      const nfts = await fetchOwned(wallet.publicKey);
+
+      app.ports.nftsCb.send(nfts);
+    },
+    (_e: any) => {
+      // TODO
     }
   )
 );
@@ -204,7 +220,7 @@ app.ports.burn.subscribe(
           owner: wallet.publicKey,
         });
         app.ports.statusUpdate.send(
-          `Token account ${ta.toString().slice(0, 25)}... will be closed`
+          `Token account ${ta.toString().slice(0, 15)}... will be closed`
         );
 
         const balance = await connection.getBalance(ta);
@@ -386,6 +402,7 @@ const fetchOwned = async (
             mintId: new web3.PublicKey(
               tk.account.data.parsed.info.mint
             ).toString(),
+            tokenAcct: new web3.PublicKey(tk.pubkey).toString(),
             amount: data.amount,
             decimals: data.decimals,
           },

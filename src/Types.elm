@@ -59,6 +59,7 @@ type alias Details =
 
 type alias Token =
     { mintId : String
+    , tokenAcct : String
     , amount : String
     , decimals : Int
     }
@@ -91,3 +92,4 @@ type Msg
     | NftsCb (List Token)
     | SelectView View
     | ClearAction
+    | RefreshTokens
