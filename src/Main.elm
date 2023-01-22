@@ -19,7 +19,7 @@ main =
 
 
 init : Flags -> ( Model, Cmd Msg )
-init _ =
+init flags =
     ( { wallets = []
       , status = "..."
       , wallet = Nothing
@@ -33,6 +33,8 @@ init _ =
       , signatures = []
       , messages = []
       , burnSig = Nothing
+      , screen = flags.screen
+      , isSmall = flags.screen.width < 1200
       }
     , Cmd.none
     )

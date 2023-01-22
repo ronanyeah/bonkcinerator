@@ -33,7 +33,12 @@ import { u64, Token } from "@solana/spl-token";
 
 const app = Elm.Main.init({
   node: document.getElementById("app"),
-  flags: {},
+  flags: {
+    screen: {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    },
+  },
 });
 
 // @ts-ignore
@@ -115,7 +120,7 @@ app.ports.connect.subscribe((name: string) =>
         app.ports.connectCb.send(null);
       }
     },
-    (_: any) => {
+    (_e: any) => {
       app.ports.connectCb.send(null);
     }
   )
@@ -154,7 +159,7 @@ app.ports.cleanup.subscribe(({ walletName }: { walletName: string }) =>
       const totalHaul = (
         await Promise.all(nfts.map((n) => connection.getBalance(n)))
       ).reduce((acc, v) => acc + v);
-      const [_, swapTx] = await buildSwapTx(totalHaul, wallet);
+      const [_txt, swapTx] = await buildSwapTx(totalHaul, wallet);
       const transaction = ixs
         .concat(swapTx.transaction.instructions)
         .reduce((acc, tx) => acc.add(tx), new Transaction());
@@ -328,7 +333,7 @@ const fetchEmpty = async (
   );
 };
 
-const fetchBurns = async (mintId: web3.PublicKey): Promise<number> => {
+const _fetchBurns = async (mintId: web3.PublicKey): Promise<number> => {
   const xs = await connection.getSignaturesForAddress(mintId, {
     limit: 25,
   });

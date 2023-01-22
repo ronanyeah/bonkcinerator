@@ -20,55 +20,57 @@ import Types exposing (..)
 
 view : Model -> Html Msg
 view model =
-    [ image [ width <| px 475 ]
-        { src = "/framed.png"
-        , description = ""
-        }
-        |> el
-            [ alignTop
-            , paddingXY 0 40
-            ]
-    , [ image
-            [ width <| px 550
-            , centerX
-            , [ text "BONKCINERATOR"
-                    |> el
-                        [ Font.size 50
-                        , Font.bold
-                        , Font.color <| rgb255 200 150 0
-                        , padding 20
-                        , Border.rounded 15
-                        , titleFont
-                        , Font.italic
-                        , style
-                            "-webkit-text-stroke"
-                            "1px black"
-                        ]
-              , [ text "Powered by"
-                    |> el [ Font.size 17 ]
-                , pill "Bonk" "https://www.bonkcoin.com/"
-                , pill "Orca" "https://www.orca.so/"
-                , pill "Helius" "https://helius.xyz/"
-                ]
-                    |> row [ Font.color white, centerX, moveUp 10, spacing 7 ]
-              ]
-                |> column
-                    [ centerX
-                    , centerY
+    (if model.isSmall then
+        [ bonkBoard
+            |> el [ centerX ]
+        , [ "Mobile/Tablet support coming soon."
+                |> text
+                |> el
+                    [ Font.size 20
                     ]
-                |> inFront
-            ]
-            { src = "/board.png"
+          , twitterLink
+                |> el [ centerX, Font.size 17 ]
+          ]
+            |> column
+                [ padding 20
+                , spacing 15
+                , Background.color lightGold
+                , Border.width 3
+                , centerX
+                ]
+        , image [ width <| px 375, centerX ]
+            { src = "/framed.png"
             , description = ""
             }
-      , text "Powered by $BONK and Orca"
-            |> el [ Font.size 17, Font.italic, Background.color white, padding 15, Border.rounded 15, width fill ]
-            |> when False
-      , viewDash model
-      ]
-        |> column [ spacing 20, height fill, width fill ]
-    ]
-        |> row [ centerX, spacing 40, height fill, padding 80, cappedWidth 1200, fadeIn ]
+        ]
+            |> column
+                ([ spacing 10
+                 , padding 40
+                 , width fill
+                 ]
+                    ++ (if model.screen.width < 300 then
+                            [ scale 0.4
+                            , moveUp 200
+                            ]
+
+                        else if model.screen.width < 500 || model.screen.height < 700 then
+                            [ scale 0.6
+                            , moveUp 150
+                            ]
+
+                        else if model.screen.width < 550 || model.screen.height < 900 then
+                            [ scale 0.8
+                            , moveUp 75
+                            ]
+
+                        else
+                            []
+                       )
+                )
+
+     else
+        viewBody model
+    )
         |> Element.layoutWith
             { options =
                 [ Element.focusStyle
@@ -83,6 +85,60 @@ view model =
             , Background.tiled "/bg.png"
             , mainFont
             ]
+
+
+bonkBoard =
+    image
+        [ width <| px 550
+        , centerX
+        , [ text "BONKCINERATOR"
+                |> el
+                    [ Font.size 50
+                    , Font.bold
+                    , Font.color <| rgb255 200 150 0
+                    , padding 20
+                    , Border.rounded 15
+                    , titleFont
+                    , Font.italic
+                    , style
+                        "-webkit-text-stroke"
+                        "1px black"
+                    ]
+          , [ text "Powered by"
+                |> el [ Font.size 17 ]
+            , pill "Bonk" "https://www.bonkcoin.com/"
+            , pill "Orca" "https://www.orca.so/"
+            , pill "Helius" "https://helius.xyz/"
+            ]
+                |> row [ Font.color white, centerX, moveUp 10, spacing 7 ]
+          ]
+            |> column
+                [ centerX
+                , centerY
+                ]
+            |> inFront
+        ]
+        { src = "/board.png"
+        , description = ""
+        }
+
+
+viewBody : Model -> Element Msg
+viewBody model =
+    [ image [ width <| px 475 ]
+        { src = "/framed.png"
+        , description = ""
+        }
+        |> el
+            [ alignTop
+            , paddingXY 0 40
+            ]
+    , [ bonkBoard
+      , viewDash model
+      ]
+        |> column [ spacing 20, height fill, width fill ]
+    ]
+        |> row [ centerX, spacing 15, height fill, padding 80, fadeIn ]
 
 
 pill name url =
@@ -267,9 +323,9 @@ viewDash model =
                         { onPress = Just <| SelectView ViewConnect
                         , label = text "x"
                         }
-                        |> el [ Font.size 40, alignTop, alignRight ]
+                        |> el [ Font.size 40, alignTop, alignRight, fadeIn ]
                         |> inFront
-                    , width fill
+                    , cappedWidth 500
                     , height fill
                     , padding 20
                     , scrollbarY
@@ -541,6 +597,17 @@ formatAmount decimals amt =
                                 |> formatFloat
                         )
             )
+
+
+twitterLink =
+    newTabLink [ hover, Background.color white, padding 5, Border.rounded 15, paddingXY 10 5 ]
+        { url = "https://twitter.com/bonkcinerator"
+        , label =
+            [ Img.twitter 17
+            , text "@bonkcinerator"
+            ]
+                |> row [ spacing 5 ]
+        }
 
 
 para txt =
