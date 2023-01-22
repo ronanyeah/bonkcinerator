@@ -555,7 +555,7 @@ viewToken model nft =
                 }
                 |> myLabel "Mint Address"
           , newTabLink [ hover, Font.underline ]
-                { url = "https://solscan.io/token/" ++ nft.tokenAcct
+                { url = "https://solscan.io/account/" ++ nft.tokenAcct
                 , label = text <| trimAddr nft.tokenAcct
                 }
                 |> myLabel "Token Account"
