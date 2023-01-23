@@ -256,7 +256,8 @@ app.ports.burn.subscribe(
           ta,
           wallet.publicKey,
           [],
-          tokenBalance.value.uiAmount || 0
+          //@ts-ignore
+          new u64(tokenBalance.value.amount)
         );
 
         const closeIx = closeTokenAccount(wallet.publicKey, ta);
