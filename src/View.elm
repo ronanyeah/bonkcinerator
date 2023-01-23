@@ -116,7 +116,10 @@ viewBody model =
             ]
         |> when (model.screen.width > 800)
     , [ bonkBoard model
-            |> el [ scale 0.8 |> whenAttr (checkHeight model.screen) ]
+            |> el
+                [ scale 0.8 |> whenAttr (checkHeight model.screen)
+                , centerX
+                ]
       , viewDash model
       ]
         |> column
@@ -130,8 +133,13 @@ viewBody model =
             [ centerX
             , spacing 15
             , height fill
+            , width fill
+                |> whenAttr (model.screen.width <= 550)
             , padding
-                (if checkHeight model.screen then
+                (if checkWidth model.screen then
+                    10
+
+                 else if checkHeight model.screen then
                     20
 
                  else
@@ -139,6 +147,14 @@ viewBody model =
                 )
             , fadeIn
             ]
+
+
+smWidth scr =
+    scr.height < 550
+
+
+smHeight scr =
+    scr.height < 600
 
 
 checkHeight scr =
@@ -194,7 +210,14 @@ viewDash model =
                             22
                         )
                     , Font.center
-                    , width <| px 300
+                    , width <|
+                        px
+                            (if checkWidth model.screen then
+                                300
+
+                             else
+                                350
+                            )
                     ]
             , model.wallets
                 |> List.map
@@ -227,6 +250,7 @@ viewDash model =
                 |> column
                     [ spacing 20
                     , centerX
+                    , width fill
                     , cappedHeight 350
                     , scrollbarY
                     , Background.color <| rgb255 228 228 228
@@ -319,7 +343,7 @@ viewDash model =
                                         ]
                             )
                     ]
-                        |> column [ spacing 20, paddingXY 0 30, width <| px 430, centerX ]
+                        |> column [ spacing 20, paddingXY 0 30, cappedWidth 430, centerX ]
                         |> el [ height fill, width fill, scrollbarY ]
 
         ViewFaq ->
@@ -398,76 +422,74 @@ viewDash model =
               else
                 cappedHeight 600
             , width fill
-            , Input.button
-                [ hover
-                , alignRight
-                , paddingXY 30 20
-                ]
-                { onPress =
-                    if model.nfts == Nothing then
-                        Nothing
-
-                    else
-                        Just RefreshTokens
-                , label =
-                    image
-                        [ width <|
-                            px
-                                (if checkWidth model.screen then
-                                    20
-
-                                 else
-                                    40
-                                )
-                        , spin
-                            |> whenAttr (model.nfts == Nothing)
-                        , moveUp 5
-                            |> whenAttr (checkWidth model.screen)
-                        ]
-                        { src = "/refresh.svg", description = "" }
-                }
-                |> inFront
-                |> whenAttr (model.view == ViewNav NavBurnNft)
             ]
         |> el [ height fill, width fill ]
 
 
 viewNav model nav conn wallet =
-    [ [ [ image [ height <| px 20 ]
-            { src = wallet.icon
-            , description = ""
-            }
-        , String.left 4 conn.address
-            ++ "..."
-            ++ String.right 4 conn.address
-            |> text
-            |> el
-                [ Html.Attributes.title conn.address
-                    |> htmlAttribute
-                , Font.size 17
-                ]
-        ]
+    [ [ [ [ image [ height <| px 20 ]
+                { src = wallet.icon
+                , description = ""
+                }
+          , String.left 4 conn.address
+                ++ "..."
+                ++ String.right 4 conn.address
+                |> text
+                |> el
+                    [ Html.Attributes.title conn.address
+                        |> htmlAttribute
+                    , Font.size 17
+                    ]
+          ]
             |> row [ spacing 10 ]
-      , [ newTabLink [ hover, Font.underline, Font.size 15 ]
-            { url = "https://solscan.io/account/" ++ conn.address
-            , label = text "View your transactions"
-            }
-        , Input.button [ Background.color <| rgb255 230 0 0, Border.rounded 15, paddingXY 10 5, Font.size 14, hover, Font.color white ]
-            { onPress = Just Disconnect
-            , label = text "Disconnect"
-            }
-        ]
+        , [ newTabLink [ hover, Font.underline, Font.size 15 ]
+                { url = "https://solscan.io/account/" ++ conn.address
+                , label = text "View your transactions"
+                }
+          , Input.button [ Background.color <| rgb255 230 0 0, Border.rounded 15, paddingXY 10 5, Font.size 14, hover, Font.color white ]
+                { onPress = Just Disconnect
+                , label = text "Disconnect"
+                }
+          ]
             |> row [ width fill, spaceEvenly ]
-      ]
-        |> column
-            [ width <| px 350
-            , Background.color white
-            , padding 10
-            , centerX
-            , Border.shadow
-                { blur = 10, color = black, offset = ( 2, 2 ), size = 2 }
-            , fadeIn
+        ]
+            |> column
+                [ width fill
+                , Background.color white
+                , padding 10
+                , Border.shadow
+                    { blur = 10, color = black, offset = ( 2, 2 ), size = 2 }
+                , fadeIn
+                ]
+      , Input.button
+            [ hover
+            , centerY
+            , paddingXY 15 20
             ]
+            { onPress =
+                if model.nfts == Nothing then
+                    Nothing
+
+                else
+                    Just RefreshTokens
+            , label =
+                image
+                    [ width <|
+                        px
+                            (if checkWidth model.screen then
+                                30
+
+                             else
+                                40
+                            )
+                    , spin
+                        |> whenAttr (model.nfts == Nothing)
+                    ]
+                    { src = "/refresh.svg", description = "" }
+            }
+            |> when (model.view == ViewNav NavBurnNft)
+      ]
+        |> row [ width fill ]
     , [ btn "Burn tokens" (SelectView <| ViewNav NavBurnNft)
       , btn "Cleanup" (SelectView <| ViewNav NavCleanup)
       , btn "History" (SelectView <| ViewNav NavHistory)
@@ -498,18 +520,51 @@ viewNav model nav conn wallet =
 
                         else
                             [ [ text "Select a token you want to convert to $BONK" ]
-                                |> paragraph [ Font.bold, centerX ]
-                            , nfts
-                                |> List.sortBy
-                                    (\n ->
-                                        --n.amount
-                                        n.mintId
-                                    )
-                                |> List.reverse
-                                |> List.map (viewToken model)
-                                |> column [ spacing 30, height fill, scrollbarY, width fill ]
+                                |> paragraph [ Font.bold, centerX, Font.center ]
+                            , [ List.length nfts
+                                    |> (\n ->
+                                            String.fromInt n
+                                                ++ " result"
+                                                ++ (if n == 1 then
+                                                        ""
+
+                                                    else
+                                                        "s"
+                                                   )
+                                       )
+                                    |> text
+                                    |> el [ Font.italic, Font.size 15 ]
+                              , nfts
+                                    |> List.sortBy
+                                        (\n ->
+                                            --n.amount
+                                            n.mintId
+                                        )
+                                    |> List.reverse
+                                    |> List.map (viewToken model)
+                                    |> column
+                                        [ if checkHeight model.screen then
+                                            spacing 10
+
+                                          else
+                                            spacing 30
+                                        , height fill
+                                        , scrollbarY
+                                        , width fill
+                                        ]
+                              ]
+                                |> column [ width fill, height fill, spacing 5 ]
                             ]
-                                |> column [ spacing 30, height fill, width fill, fadeIn ]
+                                |> column
+                                    [ if checkHeight model.screen then
+                                        spacing 10
+
+                                      else
+                                        spacing 30
+                                    , height fill
+                                    , width fill
+                                    , fadeIn
+                                    ]
                     )
 
         NavCleanup ->
@@ -536,7 +591,15 @@ viewNav model nav conn wallet =
             ]
                 |> column [ width fill, spacing 20 ]
     ]
-        |> column [ spacing 30, width fill, height fill ]
+        |> column
+            [ if checkHeight model.screen then
+                spacing 10
+
+              else
+                spacing 30
+            , width fill
+            , height fill
+            ]
 
 
 viewToken model nft =
@@ -560,7 +623,8 @@ viewToken model nft =
                 , label =
                     el
                         ([ Border.rounded 40
-                         , Background.color black
+                         , Background.color <| rgb255 120 120 120
+                         , Border.width 2
                          , height <| px 65
                          , width <| px 65
                          , [ text "SHOW"
@@ -606,7 +670,7 @@ viewToken model nft =
                 |> text
                 |> myLabel "Amount"
           ]
-            |> column [ spacing 20, width <| px 220 ]
+            |> column [ spacing 20, width fill ]
         , [ newTabLink [ hover, Font.underline ]
                 { url = "https://solscan.io/token/" ++ nft.mintId
                 , label = text <| trimAddr nft.mintId
