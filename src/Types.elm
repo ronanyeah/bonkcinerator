@@ -17,7 +17,6 @@ type alias Model =
     , signatures : List String
     , messages : List String
     , burnSig : Maybe String
-    , isSmall : Bool
     , screen : Screen
     }
 

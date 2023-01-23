@@ -16,16 +16,25 @@ import {
 } from "@orca-so/whirlpools-sdk";
 import { getWallets } from "@wallet-standard/core";
 import {
+  SolanaMobileWalletAdapter,
+  createDefaultAddressSelector,
+  createDefaultAuthorizationResultCache,
+  createDefaultWalletNotFoundHandler,
+} from "@solana-mobile/wallet-adapter-mobile";
+import {
   StandardWalletAdapter,
   isWalletAdapterCompatibleWallet,
 } from "@solana/wallet-standard-wallet-adapter-base";
-import { WalletAdapter } from "@solana/wallet-adapter-base";
+import {
+  WalletAdapter,
+  WalletAdapterNetwork,
+} from "@solana/wallet-adapter-base";
 import {
   BraveWalletAdapter,
   //GlowWalletAdapter,
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-  LedgerWalletAdapter,
+  //LedgerWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { web3, utils } from "@project-serum/anchor";
 const { Transaction, Connection, PublicKey, LAMPORTS_PER_SOL } = web3;
@@ -76,10 +85,21 @@ interface Details {
 
 [
   //new GlowWalletAdapter(),
-  new PhantomWalletAdapter(),
   new BraveWalletAdapter(),
+  new PhantomWalletAdapter(),
   new SolflareWalletAdapter(),
-  new LedgerWalletAdapter(),
+  new SolanaMobileWalletAdapter({
+    addressSelector: createDefaultAddressSelector(),
+    appIdentity: {
+      name: "Bonkcinerator",
+      uri: "https://bonkcinerator.com/",
+      icon: "/apple-touch-icon.png",
+    },
+    authorizationResultCache: createDefaultAuthorizationResultCache(),
+    cluster: WalletAdapterNetwork.Mainnet,
+    onWalletNotFound: createDefaultWalletNotFoundHandler(),
+  }),
+  //new LedgerWalletAdapter(),
 ].forEach((adapter) => {
   // eslint-disable-next-line fp/no-mutation
   options[adapter.name] = adapter;
@@ -316,7 +336,7 @@ const buildSwapTx = async (
     whirlpoolData.tokenMintA,
     //@ts-ignore
     new u64(size),
-    Percentage.fromFraction(1, 1000), // 0.1%
+    Percentage.fromFraction(1, 100), // 1%
     ORCA_WHIRLPOOL_PROGRAM_ID,
     fetcher,
     true
@@ -431,13 +451,25 @@ const fetchDetails = async (mintId: web3.PublicKey): Promise<Details> => {
 
   const [metadata] = Metadata.fromAccountInfo(account);
 
-  const res = await fetch(metadata.data.uri, { cache: "no-store" });
-  const json = await res.json();
+  const data = await (async () => {
+    try {
+      const res = await fetch(metadata.data.uri, { cache: "no-store" });
+      const json = await res.json();
+      return {
+        img: json.image,
+        name: json.name,
+        //burnRating: await fetchBurns(mintId),
+        burnRating: 0,
+      };
+    } catch (e) {
+      return {
+        img: "/what.png",
+        // eslint-disable-next-line no-control-regex
+        name: metadata.data.name.replace(/\x00/g, ""),
+        burnRating: 0,
+      };
+    }
+  })();
 
-  return {
-    img: json.image,
-    name: json.name,
-    //burnRating: await fetchBurns(mintId),
-    burnRating: 0,
-  };
+  return data;
 };

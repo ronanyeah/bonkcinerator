@@ -1,6 +1,8 @@
 const { resolve } = require("path");
 const webpack = require("webpack");
 const NodePolyfillPlugin = require("node-polyfill-webpack-plugin");
+//const BundleAnalyzerPlugin =
+//require("webpack-bundle-analyzer").BundleAnalyzerPlugin;
 
 const publicFolder = resolve("./public");
 
@@ -71,6 +73,7 @@ module.exports = (env) => {
       new webpack.DefinePlugin({
         RPC_URL_: JSON.stringify(RPC_URL),
       }),
+      //new BundleAnalyzerPlugin(),
     ],
   };
 };

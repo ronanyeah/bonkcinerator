@@ -20,62 +20,7 @@ import Types exposing (..)
 
 view : Model -> Html Msg
 view model =
-    (if model.isSmall then
-        [ bonkBoard
-            |> el [ centerX ]
-        , [ "Mobile/Tablet support coming soon."
-                |> text
-                |> el
-                    [ Font.size 20
-                    ]
-          , twitterLink
-                |> el [ centerX, Font.size 17 ]
-          ]
-            |> column
-                [ padding 20
-                , spacing 15
-                , Background.color lightGold
-                , Border.width 3
-                , centerX
-                ]
-        , image [ width <| px 375, centerX ]
-            { src = "/framed.png"
-            , description = ""
-            }
-        ]
-            |> column
-                ([ spacing 10
-                 , padding 40
-                 , width fill
-                 ]
-                    ++ (if model.screen.height < 400 then
-                            [ scale 0.4
-                            , moveUp 240
-                            ]
-
-                        else if model.screen.width < 300 || model.screen.height < 500 then
-                            [ scale 0.4
-                            , moveUp 200
-                            ]
-
-                        else if model.screen.width < 500 || model.screen.height < 700 then
-                            [ scale 0.6
-                            , moveUp 150
-                            ]
-
-                        else if model.screen.width < 550 || model.screen.height < 900 then
-                            [ scale 0.8
-                            , moveUp 75
-                            ]
-
-                        else
-                            []
-                       )
-                )
-
-     else
-        viewBody model
-    )
+    viewBody model
         |> Element.layoutWith
             { options =
                 [ Element.focusStyle
@@ -92,32 +37,23 @@ view model =
             ]
 
 
-bonkBoard =
+bonkBoard model =
+    let
+        mobile =
+            model.screen.width < 600
+    in
     image
-        [ width <| px 550
+        [ width <|
+            px
+                (if mobile then
+                    350
+
+                 else
+                    550
+                )
         , centerX
-        , [ text "BONKCINERATOR"
-                |> el
-                    [ Font.size 50
-                    , Font.bold
-                    , Font.color <| rgb255 200 150 0
-                    , padding 20
-                    , Border.rounded 15
-                    , titleFont
-                    , Font.italic
-                    , style
-                        "-webkit-text-stroke"
-                        "1px black"
-                    ]
-          , [ text "Powered by"
-                |> el [ Font.size 17 ]
-            , pill "Bonk" "https://www.bonkcoin.com/"
-            , pill "Orca" "https://www.orca.so/"
-            , pill "Helius" "https://helius.xyz/"
-            ]
-                |> row [ Font.color white, centerX, moveUp 10, spacing 7 ]
-          ]
-            |> column
+        , titles mobile
+            |> el
                 [ centerX
                 , centerY
                 ]
@@ -128,9 +64,49 @@ bonkBoard =
         }
 
 
+titles mobile =
+    [ text "BONKCINERATOR"
+        |> el
+            [ Font.size
+                (if mobile then
+                    35
+
+                 else
+                    50
+                )
+            , Font.color <| rgb255 200 150 0
+            , padding 20
+            , Border.rounded 15
+            , titleFont
+            , Font.italic
+            , style
+                "-webkit-text-stroke"
+                "1px black"
+            ]
+    , [ text "Powered by"
+            |> el [ Font.size 17 ]
+      , pill "Bonk" "https://www.bonkcoin.com/"
+      , pill "Orca" "https://www.orca.so/"
+      , pill "Helius" "https://helius.xyz/"
+      ]
+        |> row [ Font.color white, centerX, moveUp 10, spacing 7 ]
+        |> when (not mobile)
+    ]
+        |> column []
+
+
 viewBody : Model -> Element Msg
 viewBody model =
-    [ image [ width <| px 475 ]
+    [ image
+        [ width <|
+            px
+                (if checkHeight model.screen then
+                    300
+
+                 else
+                    475
+                )
+        ]
         { src = "/framed.png"
         , description = ""
         }
@@ -138,12 +114,39 @@ viewBody model =
             [ alignTop
             , paddingXY 0 40
             ]
-    , [ bonkBoard
+        |> when (model.screen.width > 800)
+    , [ bonkBoard model
+            |> el [ scale 0.8 |> whenAttr (checkHeight model.screen) ]
       , viewDash model
       ]
-        |> column [ spacing 20, height fill, width fill ]
+        |> column
+            [ spacing 20
+                |> whenAttr (not (checkHeight model.screen))
+            , height fill
+            , width fill
+            ]
     ]
-        |> row [ centerX, spacing 15, height fill, padding 80, fadeIn ]
+        |> row
+            [ centerX
+            , spacing 15
+            , height fill
+            , padding
+                (if checkHeight model.screen then
+                    20
+
+                 else
+                    80
+                )
+            , fadeIn
+            ]
+
+
+checkHeight scr =
+    scr.height < 800
+
+
+checkWidth scr =
+    scr.width < 600
 
 
 pill name url =
@@ -171,10 +174,28 @@ pill name url =
 
 
 viewDash model =
+    let
+        space =
+            if checkHeight model.screen then
+                10
+
+            else
+                30
+    in
     [ case model.view of
         ViewConnect ->
             [ para "Connect a wallet and start swapping unwanted tokens for $BONK"
-                |> el [ Font.size 25, Font.center, width <| px 300 ]
+                |> el
+                    [ Font.size
+                        (if checkHeight model.screen then
+                            19
+
+                         else
+                            22
+                        )
+                    , Font.center
+                    , width <| px 300
+                    ]
             , model.wallets
                 |> List.map
                     (\w ->
@@ -203,11 +224,18 @@ viewDash model =
                                     |> row [ spacing 10 ]
                             }
                     )
-                |> column [ spacing 20, centerX ]
+                |> column
+                    [ spacing 20
+                    , centerX
+                    , cappedHeight 350
+                    , scrollbarY
+                    , Background.color <| rgb255 228 228 228
+                    , padding 15
+                    , Border.width 1
+                    ]
             , Input.button
                 [ Font.italic
                 , centerX
-                , paddingXY 0 50
                 , hover
                 , Font.bold
                 , Font.size 25
@@ -216,7 +244,13 @@ viewDash model =
                 , label = text "🗒️ FAQ"
                 }
             ]
-                |> column [ spacing 30, centerX, paddingXY 0 30 ]
+                |> column
+                    [ height fill
+                    , spacing 15
+                    , centerX
+                    , padding space
+                    , scrollbarY
+                    ]
 
         ViewNav nav ->
             model.wallet
@@ -304,7 +338,7 @@ viewDash model =
                     , label = text "Me."
                     }
               )
-            , ( "Is this open source?"
+            , ( "Can I see the code?"
               , newTabLink [ hover, Font.underline ]
                     { url = "https://github.com/ronanyeah/bonkcinerator"
                     , label = text "Yes."
@@ -315,7 +349,6 @@ viewDash model =
             --, para "Look inside yourself, the answer is different for everybody."
             --)
             ]
-                --|> (\xs -> xs ++ xs)
                 |> List.map
                     (\( title, elem ) ->
                         [ text title
@@ -359,7 +392,11 @@ viewDash model =
                     ]
                 }
             , Border.width 6
-            , cappedHeight 600
+            , if checkHeight model.screen then
+                height fill
+
+              else
+                cappedHeight 600
             , width fill
             , Input.button
                 [ hover
@@ -374,9 +411,18 @@ viewDash model =
                         Just RefreshTokens
                 , label =
                     image
-                        [ width <| px 40
+                        [ width <|
+                            px
+                                (if checkWidth model.screen then
+                                    20
+
+                                 else
+                                    40
+                                )
                         , spin
                             |> whenAttr (model.nfts == Nothing)
+                        , moveUp 5
+                            |> whenAttr (checkWidth model.screen)
                         ]
                         { src = "/refresh.svg", description = "" }
                 }
@@ -451,8 +497,8 @@ viewNav model nav conn wallet =
                                 |> column [ spacing 20, centerX ]
 
                         else
-                            [ text "Select a token you want to convert to BONK"
-                                |> el [ Font.bold, centerX ]
+                            [ [ text "Select a token you want to convert to $BONK" ]
+                                |> paragraph [ Font.bold, centerX ]
                             , nfts
                                 |> List.sortBy
                                     (\n ->
@@ -512,8 +558,24 @@ viewToken model nft =
                     else
                         Just <| FetchDetails nft.mintId
                 , label =
-                    image
-                        ([ width <| px 65 ]
+                    el
+                        ([ Border.rounded 40
+                         , Background.color black
+                         , height <| px 65
+                         , width <| px 65
+                         , [ text "SHOW"
+                           , text "TOKEN"
+                           ]
+                            |> column
+                                [ spacing 10
+                                , Font.color white
+                                , Font.bold
+                                , Font.size 12
+                                , centerX
+                                , centerY
+                                ]
+                            |> inFront
+                         ]
                             ++ (if inProg then
                                     [ fade
                                     , spinner 30
@@ -525,10 +587,7 @@ viewToken model nft =
                                     []
                                )
                         )
-                        { src = "/what.png"
-                        , description = ""
-                        }
-                        |> el [ clip, Border.rounded 40, Border.width 2 ]
+                        none
                 }
             )
             (\data ->
@@ -547,8 +606,7 @@ viewToken model nft =
                 |> text
                 |> myLabel "Amount"
           ]
-            |> column [ spacing 20, width fill ]
-        , el [ width <| px 20, height fill ] none
+            |> column [ spacing 20, width <| px 220 ]
         , [ newTabLink [ hover, Font.underline ]
                 { url = "https://solscan.io/token/" ++ nft.mintId
                 , label = text <| trimAddr nft.mintId
@@ -561,8 +619,9 @@ viewToken model nft =
                 |> myLabel "Token Account"
           ]
             |> column [ spacing 20, alignTop, width <| px 140 ]
+            |> when (model.screen.width > 600)
         ]
-            |> row [ width fill, spaceEvenly ]
+            |> row [ spacing 20 ]
       , [ btnLoading inProg "🔍 Fetch metadata" (FetchDetails nft.mintId)
             |> when (details == Nothing)
         , btn "🔥 Burn" (Burn nft.mintId)
@@ -577,10 +636,15 @@ viewToken model nft =
         --|> text
         --)
         ]
-            |> row
-                [ width fill
-                , spaceEvenly
-                ]
+            |> (if model.screen.width > 600 then
+                    row
+                        [ width fill
+                        , spaceEvenly
+                        ]
+
+                else
+                    column [ spacing 10 ]
+               )
       ]
         |> column [ spacing 20, width fill ]
     ]
@@ -701,9 +765,17 @@ formatAmount decimals amt =
                     |> String.toInt
                     |> unwrap "oops"
                         (\n ->
-                            toFloat n
-                                / toFloat (10 ^ decimals)
-                                |> formatFloat
+                            let
+                                num =
+                                    toFloat n
+                                        / toFloat (10 ^ decimals)
+                            in
+                            if num < 0.01 then
+                                "<0.01"
+
+                            else
+                                num
+                                    |> formatFloat
                         )
             )
 
