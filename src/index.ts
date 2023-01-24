@@ -92,9 +92,14 @@ app.ports.connect.subscribe((name: string) =>
       if (wallet.connected) {
         app.ports.connectCb.send(wallet.publicKey.toString());
 
-        const nfts = await fetchOwned(wallet.publicKey);
-
-        app.ports.nftsCb.send(nfts);
+        fetchOwned(wallet.publicKey)
+          .then((nfts) => {
+            app.ports.nftsCb.send(nfts);
+          })
+          .catch((e) => {
+            console.error(e);
+            app.ports.nftsCb.send([]);
+          });
       } else {
         console.error("not connected:", wallet);
         app.ports.connectCb.send(null);

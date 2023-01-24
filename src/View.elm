@@ -150,7 +150,7 @@ viewBody model =
 
 
 smWidth scr =
-    scr.height < 550
+    scr.width < 550
 
 
 smHeight scr =
@@ -340,7 +340,7 @@ viewDash model =
                     , model.burnSig
                         |> whenJust
                             (\sig ->
-                                [ [ text "Transaction submitted:"
+                                [ [ text "🎉 Transaction submitted:"
                                         |> el [ Font.bold ]
                                   , newTabLink [ hover, Font.underline ]
                                         { url = "https://solscan.io/tx/" ++ sig
@@ -373,9 +373,10 @@ viewDash model =
             , ( "How does the swapping work?"
               , para "The Orca SOL/BONK Whirlpool is being used to facilitate the swap."
               )
-            , ( "I want to burn the BONK I receive."
-              , para "This feature will be shipping soon."
-              )
+
+            --, ( "I want to burn the BONK I receive."
+            --, para "This feature will be shipping soon."
+            --)
             , ( "Who built this?"
               , newTabLink [ hover, Font.underline ]
                     { url = "https://github.com/ronanyeah"
@@ -401,6 +402,11 @@ viewDash model =
                         ]
                             |> column [ spacing 10, width fill ]
                     )
+                |> (\xs ->
+                        xs
+                            ++ [ twitterLink |> el [ centerX ]
+                               ]
+                   )
                 |> column
                     [ spacing 40
                     , width fill
@@ -447,34 +453,58 @@ viewDash model =
 
 
 viewNav model nav conn wallet =
-    [ [ [ [ image [ height <| px 20 ]
-                { src = wallet.icon
-                , description = ""
-                }
-          , String.left 4 conn.address
-                ++ "..."
-                ++ String.right 4 conn.address
-                |> text
-                |> el
-                    [ Html.Attributes.title conn.address
-                        |> htmlAttribute
-                    , Font.size 17
-                    ]
-          ]
-            |> row [ spacing 10 ]
-        , [ newTabLink [ hover, Font.underline, Font.size 15 ]
+    [ [ [ [ [ [ image [ height <| px 20 ]
+                    { src = wallet.icon
+                    , description = ""
+                    }
+              , String.left 4 conn.address
+                    ++ "..."
+                    ++ String.right 4 conn.address
+                    |> text
+                    |> el
+                        [ Html.Attributes.title conn.address
+                            |> htmlAttribute
+                        , Font.size 17
+                        ]
+              ]
+                |> row [ spacing 10 ]
+            , newTabLink
+                [ hover
+                , Font.underline
+                , Font.size
+                    (if smWidth model.screen then
+                        12
+
+                     else
+                        15
+                    )
+                ]
                 { url = "https://solscan.io/account/" ++ conn.address
                 , label = text "View your transactions"
                 }
-          , Input.button [ Background.color <| rgb255 230 0 0, Border.rounded 15, paddingXY 10 5, Font.size 14, hover, Font.color white ]
-                { onPress = Just Disconnect
-                , label = text "Disconnect"
-                }
+            ]
+                |> column [ spacing 12 ]
+          , model.nfts
+                |> Maybe.andThen List.head
+                |> whenJust (viewBonk model)
           ]
             |> row [ width fill, spaceEvenly ]
+        , Input.button
+            [ Background.color <| rgb255 230 0 0
+            , Border.rounded 15
+            , paddingXY 10 5
+            , Font.size 14
+            , hover
+            , Font.color white
+            , alignRight
+            ]
+            { onPress = Just Disconnect
+            , label = text "Disconnect"
+            }
         ]
             |> column
                 [ width fill
+                , spacing 10
                 , Background.color white
                 , padding 10
                 , Border.shadow
@@ -527,7 +557,7 @@ viewNav model nav conn wallet =
                             ]
                     )
                     (\nfts ->
-                        if List.isEmpty nfts then
+                        if List.length nfts == 1 then
                             [ image [ width <| px 165 ]
                                 { src = "/looking.png"
                                 , description = ""
@@ -542,6 +572,7 @@ viewNav model nav conn wallet =
                             [ [ text "Select a token you want to convert to $BONK" ]
                                 |> paragraph [ Font.bold, centerX, Font.center ]
                             , [ List.length nfts
+                                    - 1
                                     |> (\n ->
                                             String.fromInt n
                                                 ++ " result"
@@ -555,6 +586,7 @@ viewNav model nav conn wallet =
                                     |> text
                                     |> el [ Font.italic, Font.size 15 ]
                               , nfts
+                                    |> List.drop 1
                                     |> List.sortBy
                                         (\n ->
                                             --n.amount
@@ -727,7 +759,11 @@ viewToken model nft =
                         ]
 
                 else
-                    column [ spacing 10 ]
+                    column
+                        [ spacing 10
+                        , width fill
+                            |> whenAttr (details /= Nothing)
+                        ]
                )
       ]
         |> column [ spacing 20, width fill ]
@@ -739,6 +775,57 @@ viewToken model nft =
             , Background.color white
             , padding 20
             , Border.width 1
+            ]
+
+
+viewBonk model nft =
+    [ image
+        [ width <| px 30
+        , height <| px 30
+        , clip
+        , Border.rounded 40
+        , Border.width 2
+        , fadeIn
+        ]
+        { src = "https://arweave.net/hQiPZOsRZXGXBJd_82PhVdlM_hACsT_q6wqwf5cSY7I"
+        , description = ""
+        }
+    , [ formatAmount nft.decimals nft.amount
+            |> text
+            |> myLabel "$BONK"
+            |> el
+                [ Font.size
+                    (if smWidth model.screen then
+                        12
+
+                     else
+                        15
+                    )
+                ]
+      , [ newTabLink [ hover, Font.underline ]
+            { url = "https://solscan.io/token/" ++ nft.mintId
+            , label = text <| trimAddr nft.mintId
+            }
+            |> myLabel "Mint Address"
+        , newTabLink [ hover, Font.underline ]
+            { url = "https://solscan.io/account/" ++ nft.tokenAcct
+            , label = text <| trimAddr nft.tokenAcct
+            }
+            |> myLabel "Token Account"
+            |> when (nft.tokenAcct /= "")
+        ]
+            |> column [ spacing 10 ]
+            |> when False
+      ]
+        |> row [ spacing 20 ]
+    ]
+        |> row
+            [ spacing 10
+            , Background.color lightGold
+            , Font.size 15
+            , padding 5
+            , Border.width 1
+            , fadeIn
             ]
 
 
@@ -834,7 +921,7 @@ fade =
 formatInt =
     toFloat
         >> FormatNumber.format
-            { usLocale | decimals = FormatNumber.Locales.Exact 2 }
+            { usLocale | decimals = FormatNumber.Locales.Exact 0 }
 
 
 formatFloat =
@@ -842,31 +929,63 @@ formatFloat =
         { usLocale | decimals = FormatNumber.Locales.Max 2 }
 
 
-formatAmount decimals amt =
-    BigInt.fromIntString amt
-        |> unwrap amt
-            (\val ->
-                --BigInt.div val (BigInt.fromInt (10 ^ clamp 0 infinity (decimals - 3)))
-                --infinity =
-                --1 // 0
-                val
-                    |> BigInt.toString
-                    |> String.toInt
-                    |> unwrap "oops"
-                        (\n ->
-                            let
-                                num =
-                                    toFloat n
-                                        / toFloat (10 ^ decimals)
-                            in
-                            if num < 0.01 then
-                                "<0.01"
+bonkDec =
+    10 ^ 5
 
-                            else
-                                num
-                                    |> formatFloat
-                        )
-            )
+
+billDec =
+    10 ^ 9
+
+
+billBonk =
+    BigInt.mul
+        (BigInt.fromInt bonkDec)
+        (BigInt.fromInt billDec)
+
+
+formatAmount : Int -> String -> String
+formatAmount decimals amt =
+    if amt == "0" then
+        amt
+
+    else
+        BigInt.fromIntString amt
+            |> unwrap amt
+                (\val ->
+                    --BigInt.div val (BigInt.fromInt (10 ^ clamp 0 infinity (decimals - 3)))
+                    --infinity =
+                    --1 // 0
+                    if BigInt.gt val billBonk then
+                        BigInt.divmod val billBonk
+                            |> unwrap "0"
+                                (\( mod, _ ) ->
+                                    (mod
+                                        |> BigInt.toString
+                                        |> String.toInt
+                                        |> unwrap "❗" formatInt
+                                    )
+                                        ++ " billion"
+                                )
+
+                    else
+                        val
+                            |> BigInt.toString
+                            |> String.toInt
+                            |> unwrap "oops"
+                                (\n ->
+                                    let
+                                        num =
+                                            toFloat n
+                                                / toFloat (10 ^ decimals)
+                                    in
+                                    if num < 0.01 then
+                                        "<0.01"
+
+                                    else
+                                        num
+                                            |> formatFloat
+                                )
+                )
 
 
 twitterLink =

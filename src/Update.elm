@@ -1,6 +1,7 @@
 module Update exposing (update)
 
 import Dict
+import List.Extra
 import Maybe.Extra exposing (unwrap)
 import Ports
 import Types exposing (..)
@@ -66,8 +67,27 @@ update msg model =
             )
 
         NftsCb res ->
+            let
+                bonkToken =
+                    res
+                        |> List.Extra.find
+                            (\r ->
+                                r.mintId
+                                    == bonk
+                            )
+                        |> Maybe.withDefault
+                            { mintId = bonk
+                            , tokenAcct = ""
+                            , amount = "0"
+                            , decimals = 5
+                            }
+            in
             ( { model
-                | nfts = Just res
+                | nfts =
+                    res
+                        |> List.filter (\r -> r.mintId /= bonk)
+                        |> (::) bonkToken
+                        |> Just
               }
             , Cmd.none
             )
@@ -202,3 +222,8 @@ update msg model =
               }
             , Cmd.none
             )
+
+
+bonk : String
+bonk =
+    "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263"
