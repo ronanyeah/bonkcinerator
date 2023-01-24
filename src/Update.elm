@@ -169,7 +169,7 @@ update msg model =
                         , burnSig = res
                         , messages =
                             if res == Nothing then
-                                model.messages ++ [ "There was a problem." ]
+                                model.messages ++ [ "❗ There was a problem." ]
 
                             else
                                 model.messages

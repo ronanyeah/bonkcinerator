@@ -199,12 +199,12 @@ app.ports.burn.subscribe(
           owner: wallet.publicKey,
         });
         app.ports.statusUpdate.send(
-          `Token account ${ta.toString().slice(0, 15)}... will be closed`
+          `🗃️ Token account ${ta.toString().slice(0, 15)}... will be closed`
         );
 
         const balance = await connection.getBalance(ta);
         app.ports.statusUpdate.send(
-          `You are reclaiming ${balance / LAMPORTS_PER_SOL} SOL`
+          `💸 You are reclaiming ${balance / LAMPORTS_PER_SOL} SOL`
         );
         const tokenBalance = await connection.getTokenAccountBalance(ta);
 
@@ -222,7 +222,7 @@ app.ports.burn.subscribe(
         const closeIx = closeTokenAccount(wallet.publicKey, ta);
 
         const [amt, swapTx] = await buildSwapTx(balance, wallet);
-        app.ports.statusUpdate.send(`You will receive ${amt} BONK`);
+        app.ports.statusUpdate.send(`🐶 You will receive ${amt} BONK`);
 
         const transaction = [burnIx, closeIx]
           .concat(swapTx.transaction.instructions)
@@ -235,7 +235,7 @@ app.ports.burn.subscribe(
         // eslint-disable-next-line fp/no-mutation
         transaction.feePayer = wallet.publicKey;
 
-        app.ports.statusUpdate.send("Awaiting transaction confirmation...");
+        app.ports.statusUpdate.send("📡 Awaiting transaction confirmation...");
         const tx = await wallet.sendTransaction(transaction, connection, {
           signers: swapTx.signers,
         });

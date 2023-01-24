@@ -220,7 +220,7 @@ viewDash model =
                             )
                     ]
             , if not selecting then
-                btn "Connect wallet" ChooseWallet
+                btnW "🔌 Connect wallet" ChooseWallet
                     |> el [ centerX ]
 
               else
@@ -309,7 +309,14 @@ viewDash model =
                             model.details
                                 |> Dict.get mintId
                     in
-                    [ image [ width <| px 65, centerX ]
+                    [ image
+                        [ width <| px 65
+                        , Border.rounded 40
+                        , clip
+                        , height <| px 65
+                        , centerX
+                        , Border.width 2
+                        ]
                         { src =
                             details
                                 |> unwrap "/what.png" .img
@@ -317,13 +324,13 @@ viewDash model =
                         }
                     , details
                         |> whenJust (.name >> text >> el [ centerX, Font.bold ])
-                    , para ("You are burning " ++ String.left 15 mintId ++ "...")
+                    , para ("🔥 You are burning " ++ String.left 15 mintId ++ "...")
                     , model.messages
                         |> List.map (para >> el [ width fill, fadeIn ])
                         |> column [ spacing 20, width fill ]
                         |> when (not (List.isEmpty model.messages))
                     , (if List.any (String.contains "problem") model.messages then
-                        btn "Back" ClearAction
+                        btnW "Back" ClearAction
 
                        else
                         spinner 30
@@ -346,7 +353,7 @@ viewDash model =
                                         , padding 15
                                         , Border.width 1
                                         ]
-                                , btn "Continue" ClearAction
+                                , btnW "Continue" ClearAction
                                     |> el [ centerX ]
                                 ]
                                     |> column
@@ -760,7 +767,8 @@ fadeIn =
 
 
 btnLoading loading txt msg =
-    btn_ txt
+    btn_ lightGold
+        txt
         (if loading then
             Nothing
 
@@ -787,11 +795,15 @@ black =
     rgb255 0 0 0
 
 
+btnW txt =
+    Just >> btn_ white txt
+
+
 btn txt =
-    Just >> btn_ txt
+    Just >> btn_ lightGold txt
 
 
-btn_ txt msg =
+btn_ col txt msg =
     Input.button
         [ if msg == Nothing then
             fade
@@ -800,7 +812,7 @@ btn_ txt msg =
             hover
         , padding 10
         , Border.width 2
-        , Background.color lightGold
+        , Background.color col
         , Border.shadow
             { blur = 1, color = black, offset = ( 1, 1 ), size = 1 }
         ]
