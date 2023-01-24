@@ -20,7 +20,7 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( { wallets = []
+    ( { wallets = Nothing
       , status = "..."
       , wallet = Nothing
       , connectInProgress = Nothing
@@ -28,7 +28,7 @@ init flags =
       , cleanupInProgress = False
       , details = Dict.empty
       , detailsInProgress = Nothing
-      , view = Types.ViewConnect
+      , view = Types.ViewConnect False
       , burnInProgress = Nothing
       , signatures = []
       , messages = []

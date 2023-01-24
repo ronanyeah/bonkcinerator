@@ -199,7 +199,7 @@ viewDash model =
                 30
     in
     [ case model.view of
-        ViewConnect ->
+        ViewConnect selecting ->
             [ para "Connect a wallet and start swapping unwanted tokens for $BONK"
                 |> el
                     [ Font.size
@@ -219,44 +219,57 @@ viewDash model =
                                 350
                             )
                     ]
-            , model.wallets
-                |> List.map
-                    (\w ->
-                        Input.button
-                            [ hover
-                                |> whenAttr (model.connectInProgress == Nothing)
-                            , fade
-                                |> whenAttr (model.connectInProgress /= Nothing && model.connectInProgress /= Just w.name)
-                            , Font.bold
-                                |> whenAttr (model.connectInProgress == Just w.name)
-                            , spinner 20
-                                |> el [ centerY, paddingXY 10 0 ]
-                                |> onRight
-                                |> whenAttr (model.connectInProgress == Just w.name)
-                            ]
-                            { onPress =
-                                if model.connectInProgress == Nothing then
-                                    Just <| Connect w.name
+            , if not selecting then
+                btn "Connect wallet" ChooseWallet
+                    |> el [ centerX ]
 
-                                else
-                                    Nothing
-                            , label =
-                                [ image [ height <| px 20 ] { src = w.icon, description = "" }
-                                , text w.name
-                                ]
-                                    |> row [ spacing 10 ]
-                            }
-                    )
-                |> column
-                    [ spacing 20
-                    , centerX
-                    , width fill
-                    , cappedHeight 350
-                    , scrollbarY
-                    , Background.color <| rgb255 228 228 228
-                    , padding 15
-                    , Border.width 1
-                    ]
+              else
+                model.wallets
+                    |> unwrap
+                        (spinner 20
+                            |> el [ centerX ]
+                        )
+                        (\ws ->
+                            ws
+                                |> List.map
+                                    (\w ->
+                                        Input.button
+                                            [ hover
+                                                |> whenAttr (model.connectInProgress == Nothing)
+                                            , fade
+                                                |> whenAttr (model.connectInProgress /= Nothing && model.connectInProgress /= Just w.name)
+                                            , Font.bold
+                                                |> whenAttr (model.connectInProgress == Just w.name)
+                                            , spinner 20
+                                                |> el [ centerY, paddingXY 10 0 ]
+                                                |> onRight
+                                                |> whenAttr (model.connectInProgress == Just w.name)
+                                            ]
+                                            { onPress =
+                                                if model.connectInProgress == Nothing then
+                                                    Just <| Connect w.name
+
+                                                else
+                                                    Nothing
+                                            , label =
+                                                [ image [ height <| px 20 ] { src = w.icon, description = "" }
+                                                , text w.name
+                                                ]
+                                                    |> row [ spacing 10 ]
+                                            }
+                                    )
+                                |> column
+                                    [ spacing 20
+                                    , centerX
+                                    , width fill
+                                    , cappedHeight 350
+                                    , scrollbarY
+                                    , Background.color <| rgb255 228 228 228
+                                    , padding 15
+                                    , Border.width 1
+                                    , fadeIn
+                                    ]
+                        )
             , Input.button
                 [ Font.italic
                 , centerX
@@ -281,7 +294,7 @@ viewDash model =
                 |> unwrap (text "Not connected")
                     (\conn ->
                         model.wallets
-                            |> List.Extra.find (\x -> x.name == conn.name)
+                            |> Maybe.andThen (List.Extra.find (\x -> x.name == conn.name))
                             |> unwrap (text "Wallet missing")
                                 (\wallet ->
                                     viewNav model nav conn wallet
@@ -394,7 +407,7 @@ viewDash model =
                         , Font.bold
                         , paddingXY 15 0
                         ]
-                        { onPress = Just <| SelectView ViewConnect
+                        { onPress = Just <| SelectView <| ViewConnect False
                         , label = text "x"
                         }
                         |> el [ Font.size 40, alignTop, alignRight, fadeIn ]

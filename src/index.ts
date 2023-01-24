@@ -31,10 +31,9 @@ import {
 } from "@solana/wallet-adapter-base";
 import {
   BraveWalletAdapter,
-  //GlowWalletAdapter,
+  GlowWalletAdapter,
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-  //LedgerWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { web3, utils } from "@project-serum/anchor";
 const { Transaction, Connection, PublicKey, LAMPORTS_PER_SOL } = web3;
@@ -82,46 +81,6 @@ interface Details {
   name: string;
   burnRating: number;
 }
-
-[
-  //new GlowWalletAdapter(),
-  new BraveWalletAdapter(),
-  new PhantomWalletAdapter(),
-  new SolflareWalletAdapter(),
-  new SolanaMobileWalletAdapter({
-    addressSelector: createDefaultAddressSelector(),
-    appIdentity: {
-      name: "Bonkcinerator",
-      uri: "https://bonkcinerator.com/",
-      icon: "/apple-touch-icon.png",
-    },
-    authorizationResultCache: createDefaultAuthorizationResultCache(),
-    cluster: WalletAdapterNetwork.Mainnet,
-    onWalletNotFound: createDefaultWalletNotFoundHandler(),
-  }),
-  //new LedgerWalletAdapter(),
-].forEach((adapter) => {
-  // eslint-disable-next-line fp/no-mutation
-  options[adapter.name] = adapter;
-  app.ports.walletUpdate.send({
-    name: adapter.name,
-    icon: adapter.icon,
-  });
-});
-
-wallets.on("register", (newWallet: any) => {
-  console.log("wallet registered:", newWallet.name);
-  if (isWalletAdapterCompatibleWallet(newWallet)) {
-    // eslint-disable-next-line fp/no-mutation
-    options[newWallet.name] = new StandardWalletAdapter({ wallet: newWallet });
-  } else {
-    console.log("not compat:", newWallet.name);
-  }
-  app.ports.walletUpdate.send({
-    name: newWallet.name,
-    icon: newWallet.icon,
-  });
-});
 
 app.ports.connect.subscribe((name: string) =>
   wrap(
@@ -474,3 +433,51 @@ const fetchDetails = async (mintId: web3.PublicKey): Promise<Details> => {
 
   return data;
 };
+
+app.ports.fetchWallets.subscribe(() =>
+  wrap(
+    async () => {
+      const registered = wallets
+        .get()
+        .flatMap((newWallet) =>
+          isWalletAdapterCompatibleWallet(newWallet)
+            ? [new StandardWalletAdapter({ wallet: newWallet })]
+            : []
+        );
+      [
+        new GlowWalletAdapter(),
+        new BraveWalletAdapter(),
+        new PhantomWalletAdapter(),
+        new SolflareWalletAdapter(),
+        new SolanaMobileWalletAdapter({
+          addressSelector: createDefaultAddressSelector(),
+          appIdentity: {
+            name: "Bonkcinerator",
+            uri: "https://bonkcinerator.com/",
+            icon: "/apple-touch-icon.png",
+          },
+          authorizationResultCache: createDefaultAuthorizationResultCache(),
+          cluster: WalletAdapterNetwork.Mainnet,
+          onWalletNotFound: createDefaultWalletNotFoundHandler(),
+        }),
+        ...registered,
+      ].forEach((adapter) => {
+        if (
+          adapter.readyState === "Installed" ||
+          (adapter.readyState === "Loadable" &&
+            adapter.name === "Mobile Wallet Adapter")
+        ) {
+          // eslint-disable-next-line fp/no-mutation
+          options[adapter.name] = adapter;
+          app.ports.walletUpdate.send({
+            name: adapter.name,
+            icon: adapter.icon,
+          });
+        }
+      });
+    },
+    (_e: any) => {
+      //
+    }
+  )
+);

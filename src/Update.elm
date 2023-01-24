@@ -58,7 +58,7 @@ update msg model =
             ( { model
                 | wallet = Nothing
                 , nfts = Nothing
-                , view = ViewConnect
+                , view = ViewConnect False
                 , messages = []
                 , burnSig = Nothing
               }
@@ -99,7 +99,11 @@ update msg model =
 
         WalletCb xs ->
             ( { model
-                | wallets = model.wallets ++ [ xs ]
+                | wallets =
+                    model.wallets
+                        |> Maybe.withDefault []
+                        |> (::) xs
+                        |> Just
               }
             , Cmd.none
             )
@@ -107,6 +111,15 @@ update msg model =
         CleanupCb _ ->
             ( { model | cleanupInProgress = False }
             , Cmd.none
+            )
+
+        ChooseWallet ->
+            ( { model | view = ViewConnect True }
+            , if model.wallets == Nothing then
+                Ports.fetchWallets ()
+
+              else
+                Cmd.none
             )
 
         Connect val ->

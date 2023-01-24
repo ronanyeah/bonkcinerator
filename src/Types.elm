@@ -4,7 +4,7 @@ import Dict exposing (Dict)
 
 
 type alias Model =
-    { wallets : List Wallet
+    { wallets : Maybe (List Wallet)
     , status : String
     , wallet : Maybe Connection
     , detailsInProgress : Maybe String
@@ -37,7 +37,7 @@ type Action
 
 
 type View
-    = ViewConnect
+    = ViewConnect Bool
     | ViewNav Nav
     | ViewAction Action
     | ViewFaq
@@ -92,3 +92,4 @@ type Msg
     | SelectView View
     | ClearAction
     | RefreshTokens
+    | ChooseWallet
