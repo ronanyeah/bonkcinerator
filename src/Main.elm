@@ -20,20 +20,30 @@ main =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( { wallets = Nothing
+    ( { wallets =
+            flags.xnft
+                |> Maybe.map (.wallet >> List.singleton)
       , status = "..."
-      , wallet = Nothing
+      , wallet =
+            flags.xnft
+                |> Maybe.map (\x -> { name = x.wallet.name, address = x.address })
       , connectInProgress = Nothing
       , nfts = Nothing
       , cleanupInProgress = False
       , details = Dict.empty
       , detailsInProgress = Nothing
-      , view = Types.ViewConnect False
+      , view =
+            if flags.xnft == Nothing then
+                Types.ViewConnect False
+
+            else
+                Types.ViewNav Types.NavBurnNft
       , burnInProgress = Nothing
       , signatures = []
       , messages = []
       , burnSig = Nothing
       , screen = flags.screen
+      , isXnft = flags.xnft /= Nothing
       }
     , Cmd.none
     )

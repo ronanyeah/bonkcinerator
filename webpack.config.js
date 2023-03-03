@@ -66,6 +66,7 @@ module.exports = (env) => {
       fallback: {
         fs: false,
       },
+      extensions: [".ts", ".js"],
     },
     plugins: [
       new NodePolyfillPlugin(),

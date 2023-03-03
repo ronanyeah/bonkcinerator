@@ -501,6 +501,7 @@ viewNav model nav conn wallet =
             { onPress = Just Disconnect
             , label = text "Disconnect"
             }
+            |> when (not model.isXnft)
         ]
             |> column
                 [ width fill

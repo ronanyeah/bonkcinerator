@@ -18,11 +18,13 @@ type alias Model =
     , messages : List String
     , burnSig : Maybe String
     , screen : Screen
+    , isXnft : Bool
     }
 
 
 type alias Flags =
     { screen : Screen
+    , xnft : Maybe { wallet : Wallet, address : String }
     }
 
 
