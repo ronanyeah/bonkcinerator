@@ -22,7 +22,13 @@ import {
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { web3, utils } from "@project-serum/anchor";
-const { Transaction, Connection, PublicKey, LAMPORTS_PER_SOL } = web3;
+const {
+  VersionedTransaction,
+  TransactionMessage,
+  Connection,
+  PublicKey,
+  LAMPORTS_PER_SOL,
+} = web3;
 import { Token } from "@solana/spl-token";
 import Decimal from "decimal.js";
 import {
@@ -182,20 +188,20 @@ const getWallet = (walletName: string): WalletAdapter<string> => {
           fetcher,
           connection
         );
-        const transaction = ixs
-          .concat(swapTx.transaction.instructions)
-          .reduce((acc, tx) => acc.add(tx), new Transaction());
 
         const { blockhash } = await connection.getLatestBlockhash();
 
-        // eslint-disable-next-line fp/no-mutation
-        transaction.recentBlockhash = blockhash;
-        // eslint-disable-next-line fp/no-mutation
-        transaction.feePayer = wallet.publicKey;
-
-        const tx = await wallet.sendTransaction(transaction, connection, {
-          signers: swapTx.signers,
+        const msg = new TransactionMessage({
+          payerKey: wallet.publicKey,
+          instructions: ixs.concat(swapTx.transaction.instructions),
+          recentBlockhash: blockhash,
         });
+
+        const transaction = new VersionedTransaction(msg.compileToV0Message());
+
+        transaction.sign(swapTx.signers);
+
+        const tx = await wallet.sendTransaction(transaction, connection);
 
         console.log(tx);
       },
@@ -248,23 +254,27 @@ const getWallet = (walletName: string): WalletAdapter<string> => {
           );
           app.ports.statusUpdate.send(`🐶 You will receive ${amt} BONK`);
 
-          const transaction = [burnIx, closeIx]
-            .concat(swapTx.transaction.instructions)
-            .reduce((acc, tx) => acc.add(tx), new Transaction());
-
           const { blockhash } = await connection.getLatestBlockhash();
 
-          // eslint-disable-next-line fp/no-mutation
-          transaction.recentBlockhash = blockhash;
-          // eslint-disable-next-line fp/no-mutation
-          transaction.feePayer = wallet.publicKey;
+          const msg = new TransactionMessage({
+            payerKey: wallet.publicKey,
+            instructions: [burnIx, closeIx].concat(
+              swapTx.transaction.instructions
+            ),
+            recentBlockhash: blockhash,
+          });
+
+          const transaction = new VersionedTransaction(
+            msg.compileToV0Message()
+          );
+
+          transaction.sign(swapTx.signers);
 
           app.ports.statusUpdate.send(
             "📡 Awaiting transaction confirmation..."
           );
-          const tx = await wallet.sendTransaction(transaction, connection, {
-            signers: swapTx.signers,
-          });
+
+          const tx = await wallet.sendTransaction(transaction, connection);
 
           app.ports.burnCb.send(tx);
         },
